@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Superclass demonstration</title>
+        <link type="text/css" rel="stylesheet" href="qunit.css" />
+        <script type="text/javascript" src="qunit.js"></script>
+        <script type="Application/javascript;version=1.8">
+function Class( superclass, subclass ) {
+    if( !subclass ) {
+        subclass = superclass;
+        superclass = null;
+    }
+
+    // F is our new class constructor, it does nothing.  Absolutely nothing.
+    var F = function() {};
+    if( superclass ) {
+        // If there was a superclass, set our new classes prototype to it.
+        F.prototype = new superclass();
+        for( var key in subclass ) {
+            // copy over subclass properties to new prototype.
+            F.prototype[ key ] = subclass[ key ];
+        }
+
+        // A very very important bit of housekeeping here, keep track of
+        // the superclass.  This is used later.
+        F.superclass = superclass;
+    }
+    else {
+        // no superclass, just set the prototype to be the subclass object.
+        F.prototype = subclass;
+    }
+
+    // very important to reset the constructor as any class with a superclass
+    // will have it overwritten
+    F.prototype.constructor = F;
+
+    return F;
+}
+
+Class.create = function( constr ) {
+    var obj = new constr();
+
+    // wrap EVERY function with a housekeeping function.  Yes, this is slow and will
+    // eat memory like there is no tomorrow.
+    var handlers = ( function( obj ) {
+
+        var currLevel, currKey;
+        
+        var stack = [];
+        function pushStack() {
+            stack.push( [ currLevel, currKey ] );
+        }
+        
+
+        function popStack() { 
+            [ currLevel, currKey ] = stack.splice( stack.length - 1, 1 );
+        }
+        
+
+        var decorator = function( key ) {
+            return function() {
+                pushStack();
+
+                [ currKey, currLevel ] = [ key, obj.constructor ];
+
+                while( !currLevel.prototype.hasOwnProperty( key ) ) {
+                    currLevel = currLevel.superclass;
+                }
+
+                var retval = currLevel.prototype[ key ].apply( obj, arguments );
+
+                popStack();
+
+                return retval;
+            };
+        }
+
+        var superFunc = function() {
+            pushStack();
+            var found = false;
+
+            do {
+                currLevel = currLevel.superclass;
+                found = currLevel && currLevel.prototype.hasOwnProperty( currKey );
+            } while( currLevel && !found );
+
+            var retval;
+
+            if( found ) {
+                retval = currLevel.prototype[ currKey ].apply( obj, arguments );
+            }
+
+            popStack();
+
+            return retval;
+        };
+
+        return {
+            decorator: decorator,
+            'super': superFunc
+        };
+    }( obj ) );
+
+    for( var key in obj.constructor.prototype ) {
+         // note, there is NO hasOwnProperty.
+        var item = obj[ key ];
+        if( typeof item === 'function' && key !== 'constructor' ) {
+            obj[key] = handlers.decorator( key );
+        }
+    }
+
+    obj.super = handlers.super;
+
+    return obj;
+}
+
+var SuperClass = Class( {
+    toString: function() {
+         return 'SuperClass checking in.';
+    },
+
+    addANumber: function( start ) {
+         return start + 10;
+    }
+} );
+
+var SubClass = Class( SuperClass, {
+    toString: function() {
+        return 'SubClass and ' + this.super();
+    },
+
+    addANumber: function( start ) {
+         return this.super( start + 5 );
+    }
+} );
+
+var SubSubClass = Class( SubClass, {
+    toString: function() {
+        return 'SubSubClass';
+    },
+
+    whack: function() {
+       return this.toString() + ' ' +  this.addANumber( 2 );
+    }
+} );
+
+</script>
+<script type="text/javascript" src="tests.js"></script>
+    </head>
+    <body>
+    <h1 id="qunit-header">QUnit example</h1>
+    <h2 id="qunit-banner"></h2>
+    <div id="qunit-testrunner-toolbar"></div>
+    <h2 id="qunit-userAgent"></h2>
+    <ol id="qunit-tests"></ol>
+    <div id="qunit-fixture">test markup, will be hidden</div>
+
+    <body>
+</html>
