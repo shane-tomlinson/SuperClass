@@ -67,11 +67,11 @@ $(function() {
     } );
 
     test( 'toString', function() {
-        equal( subsubInst.toString(), 'Sub Class of SubClass and SuperClass checking in.' );
+        equal( subsubInst.toString(), 'SubSubClass' );
     } );
 
     test( 'calling all kinds of internals', function() {
-        equal( subsubInst.whack(), 'Sub Class of SubClass and SuperClass checking in. 17' );
+        equal( subsubInst.whack(), 'SubSubClass 17' );
     } );
 } );
 
