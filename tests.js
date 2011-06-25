@@ -1,4 +1,6 @@
-$(function() {
+/*global test, equal, SubClass, SuperClass, SubSubClass, ok, Class */
+
+(function() {
     var superInst;
 
     module( "Class hierarchy" );
@@ -73,5 +75,5 @@ $(function() {
     test( 'calling all kinds of internals', function() {
         equal( subsubInst.whack(), 'SubSubClass 17' );
     } );
-} );
+}() );
 
