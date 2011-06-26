@@ -18,9 +18,9 @@ For example, say there are two "Classes", SuperClass and SubClass, both with a t
 
 That's ridiculous.  I want this:
 
-   SubClass.prototype.toString = function() {
+    SubClass.prototype.toString = function() {
         return 'SubClass: ' + this.super();
-   }
+    }
 
 How much cleaner is that.
 
