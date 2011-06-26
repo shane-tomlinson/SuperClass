@@ -105,5 +105,17 @@
     test( 'calling all kinds of internals', function() {
         equal( subsubInst.whack(), 'SubSubClass 17' );
     } );
+
+    module( "Two objects at once", {
+        setup: function() {
+            subInst = Class.create( SubClass );
+            subsubInst = Class.create( SubSubClass );
+        }
+    } );
+
+    test( 'toString on both works correctly', function() {
+        equal( subsubInst.toString(), 'SubSubClass' );
+        equal( subInst.toString(), 'SubClass and SuperClass checking in.' );
+    } );
 }() );
 
