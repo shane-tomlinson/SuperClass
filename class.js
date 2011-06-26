@@ -42,7 +42,7 @@ Class.create = function( constr ) {
     // manage the call stack/prototype chain for every function call in the 
     // chain.  Because these functions are created once for each object, it
     // is less than optimal when it comes to memory usage.
-    var handlers = ( function( obj ) {
+    var funcDecorator = ( function( obj ) {
         var currLevel, 
             currKey, 
             stack = [];
@@ -68,7 +68,7 @@ Class.create = function( constr ) {
         // currLevel, currKey are not unique to each function call,
         // but are unique to each object.  This means we have to keep
         // the state appropriately.
-        var decorator = function( key ) {
+        function decorator( key ) {
             return function() {
                 pushStack();
 
@@ -77,8 +77,13 @@ Class.create = function( constr ) {
                 currKey = key;
                 currLevel = obj.constructor;
 
+                obj.super = _super;
+
                 var next = findNext(),
                     retval = next.apply( obj, arguments );
+
+                obj.super = null;
+                delete obj.super;
 
                 popStack();
 
@@ -90,7 +95,7 @@ Class.create = function( constr ) {
         // The initial call to the decorator and each call to this.super
         // sets up currLevel to point to the function that should
         // be run next.
-        var _super = function() {
+        function _super() {
             pushStack();
 
             var next = findNext(),
@@ -115,10 +120,7 @@ Class.create = function( constr ) {
             return next;
         }
 
-        return {
-            decorator: decorator,
-            'super': _super
-        };
+        return decorator;
     }( obj ) );
 
     for( var key in obj.constructor.prototype ) {
@@ -128,11 +130,10 @@ Class.create = function( constr ) {
         // each function with out own that sets up the call stack management
         // routine.
         if( typeof item === 'function' && key !== 'constructor' ) {
-            obj[key] = handlers.decorator( key );
+            obj[key] = funcDecorator( key );
         }
     }
 
-    obj.super = handlers.super;
 
     return obj;
 }
