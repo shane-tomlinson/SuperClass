@@ -40,51 +40,67 @@ function Class( superclass, subclass ) {
 Class.create = function( constr ) {
     var obj = new constr();
 
-    // wrap EVERY function with a housekeeping function.  Yes, this is slow and will
-    // eat memory like there is no tomorrow.
+    // No wrapping on base class instances.
+    if( !obj.constructor.superclass ) {
+        return obj;
+    }
 
+    // We have some inheritance, wrap every function with our own stack 
+    // management function.
+    // Yes, this is slow and will eat memory like there is no tomorrow.
     var handlers = ( function( obj ) {
         var currLevel, currKey;
 
+        var stack = [];
+        function pushStack() {
+            stack.push( [ currLevel, currKey ] );
+        }
+
+        function popStack() {
+            var level = stack.splice( stack.length - 1, 1 );
+            currLevel = level[ 0 ];
+            currKey = level[ 1 ];
+        }
         var decorator = function( key ) {
             return function() {
-                var prevLevel = currLevel;
-                var prevKey = currKey;
+                pushStack();
 
                 currKey = key;
                 currLevel = obj.constructor;
 
-                while( !currLevel.prototype.hasOwnProperty( key ) ) {
-                    currLevel = currLevel.superclass;
-                }
+                var next = findNext(),
+                    retval = next.apply( obj, arguments );
 
-                var retval = currLevel.prototype[ key ].apply( obj, arguments );
-
-                currLevel = prevLevel;
-                currKey = prevKey;
+                popStack();
 
                 return retval;
             };
         }
 
         var superFunc = function() {
-            var prevLevel = currLevel;
-            var prevKey = currKey;
-            var found = false;
-            do {
-                currLevel = currLevel.superclass;
-                found = currLevel && currLevel.prototype.hasOwnProperty( currKey );
-            } while( currLevel && !found );
+            pushStack();
 
-            if( found ) {
-                var retval = currLevel.prototype[ currKey ].apply( obj, arguments );
+            var next = findNext(),
+                retval;
 
-                currLevel = prevLevel;
-                currKey = prevKey;
-
-                return retval;
+            if( next ) {
+                retval = next.apply( obj, arguments );
             }
+
+            popStack();
+
+            return retval;
         };
+
+        function findNext() {
+            var next;
+            do {
+                next = currLevel && currLevel.prototype.hasOwnProperty( currKey 
+                        ) && currLevel.prototype[ currKey ];
+                currLevel = currLevel.superclass;
+            } while( currLevel && !next );
+            return next;
+        }
 
         return {
             decorator: decorator,
