@@ -1,6 +1,36 @@
-/*global test, equal, SubClass, SuperClass, SubSubClass, ok, Class */
+/*global test, equal, ok, Class */
 
 (function() {
+    var SuperClass = Class( {
+        toString: function() {
+             return 'SuperClass checking in.';
+        },
+
+        addANumber: function( start ) {
+             return start + 10;
+        }
+    } );
+
+    var SubClass = Class( SuperClass, {
+        toString: function() {
+            return 'SubClass and ' + this.super();
+        },
+
+        addANumber: function( start ) {
+             return this.super( start + 5 );
+        }
+    } );
+
+    var SubSubClass = Class( SubClass, {
+        toString: function() {
+            return 'SubSubClass';
+        },
+
+        whack: function() {
+           return this.toString() + ' ' +  this.addANumber( 2 );
+        }
+    } );
+
     var superInst;
 
     module( "Class hierarchy" );
