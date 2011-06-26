@@ -128,7 +128,8 @@ Class.create = function( constr ) {
         // note, there is NO hasOwnProperty.  We want to iterate through
         // ALL of the Class' top level functions.  We are decorating
         // each function with out own that sets up the call stack management
-        // routine.
+        // routine.  Note, we do not wrap the constructor.  This is so that we
+        // can do instanceof correctly.
         if( typeof item === 'function' && key !== 'constructor' ) {
             obj[key] = funcDecorator( key );
         }
