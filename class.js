@@ -38,13 +38,15 @@ Class.create = function( constr ) {
         return obj;
     }
 
-    // We have some inheritance, wrap every function with our own stack 
-    // management function.
-    // Yes, this is slow and will eat memory like there is no tomorrow.
+    // There is one set of handlers created for each object.  This allows us to
+    // manage the call stack/prototype chain for every function call in the 
+    // chain.  Because these functions are created once for each object, it
+    // is less than optimal when it comes to memory usage.
     var handlers = ( function( obj ) {
-        var currLevel, currKey;
+        var currLevel, 
+            currKey, 
+            stack = [];
 
-        var stack = [];
         function pushStack() {
             stack.push( [ currLevel, currKey ] );
         }
@@ -54,10 +56,24 @@ Class.create = function( constr ) {
             currLevel = level[ 0 ];
             currKey = level[ 1 ];
         }
+
+        // The initial decorator function, this function decorates
+        // every front facing function created whenever the object
+        // is created using Class.create.  When the function is called,
+        // two variables, currLevel and currKey are set up to keep track
+        // of where in the prototype chain we are currently and which
+        // funciton needs called.  When entering the function, push
+        // the current key/level info on the stack so that when we 
+        // finish, the state is back to where it originally was.
+        // currLevel, currKey are not unique to each function call,
+        // but are unique to each object.  This means we have to keep
+        // the state appropriately.
         var decorator = function( key ) {
             return function() {
                 pushStack();
 
+                // currKey and currLevel point at our current function
+                // at the constructor.
                 currKey = key;
                 currLevel = obj.constructor;
 
@@ -70,7 +86,11 @@ Class.create = function( constr ) {
             };
         }
 
-        var superFunc = function() {
+        // This takes care of when the user calls "this.super()"
+        // The initial call to the decorator and each call to this.super
+        // sets up currLevel to point to the function that should
+        // be run next.
+        var _super = function() {
             pushStack();
 
             var next = findNext(),
@@ -97,13 +117,16 @@ Class.create = function( constr ) {
 
         return {
             decorator: decorator,
-            'super': superFunc
+            'super': _super
         };
     }( obj ) );
 
     for( var key in obj.constructor.prototype ) {
-         // note, there is NO hasOwnProperty.
         var item = obj[ key ];
+        // note, there is NO hasOwnProperty.  We want to iterate through
+        // ALL of the Class' top level functions.  We are decorating
+        // each function with out own that sets up the call stack management
+        // routine.
         if( typeof item === 'function' && key !== 'constructor' ) {
             obj[key] = handlers.decorator( key );
         }
