@@ -30,6 +30,7 @@ function Class( superclass, subclass ) {
     return F;
 }
 
+// The creation function.  Called like: Class.create( constructor_to_use );
 Class.create = function( constr ) {
     var obj = new constr();
 
@@ -39,12 +40,12 @@ Class.create = function( constr ) {
     }
 
     // There is one set of handlers created for each object.  This allows us to
-    // manage the call stack/prototype chain for every function call in the 
+    // manage the call stack/prototype chain for every function call in the
     // chain.  Because these functions are created once for each object, it
     // is less than optimal when it comes to memory usage.
     var funcDecorator = ( function( obj ) {
-        var currLevel, 
-            currKey, 
+        var currLevel,
+            currKey,
             stack = [];
 
         function pushStack() {
@@ -63,7 +64,7 @@ Class.create = function( constr ) {
         // two variables, currLevel and currKey are set up to keep track
         // of where in the prototype chain we are currently and which
         // funciton needs called.  When entering the function, push
-        // the current key/level info on the stack so that when we 
+        // the current key/level info on the stack so that when we
         // finish, the state is back to where it originally was.
         // currLevel, currKey are not unique to each function call,
         // but are unique to each object.  This means we have to keep
@@ -113,7 +114,7 @@ Class.create = function( constr ) {
         function findNext() {
             var next;
             do {
-                next = currLevel && currLevel.prototype.hasOwnProperty( currKey 
+                next = currLevel && currLevel.prototype.hasOwnProperty( currKey
                         ) && currLevel.prototype[ currKey ];
                 currLevel = currLevel.superclass;
             } while( currLevel && !next );
