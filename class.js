@@ -1,3 +1,25 @@
+// Function.prototype.bind polyfill from MDN.
+if ( !Function.prototype.bind ) {
+
+  Function.prototype.bind = function( obj ) {
+    if(typeof this !== 'function') // closest thing possible to the ECMAScript 5 internal IsCallable function
+      throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
+
+    var slice = [].slice,
+        args = slice.call(arguments, 1),
+        self = this,
+        nop = function () {},
+        bound = function () {
+          return self.apply( this instanceof nop ? this : ( obj || {} ),
+                              args.concat( slice.call(arguments) ) );
+        };
+
+    bound.prototype = this.prototype;
+
+    return bound;
+  };
+}
+
 if( !Function.prototype.curry ) {
     Function.prototype.curry = function() {
             var fn = this, args = Array.prototype.slice.call(arguments);
@@ -52,10 +74,14 @@ Class.create = function( constr ) {
             retval;
 
         if( info.next ) {
+        	// overwrite this.super with a reference ourselves, but set
+        	//	the level to be one above this in the prototype chain.
             this.super = _super.bind( this, key, info.level );
-            var args = [].slice.call( arguments, 2 );
-            retval = info.next.apply( this, args );
 
+            retval = info.next.apply( this, [].slice.call( arguments, 2 ) );
+
+			// get rid of this.super so this is not callable from the
+			// outside.
             this.super = null;
             delete this.super;
         }
@@ -66,6 +92,8 @@ Class.create = function( constr ) {
     function findNext( key, level ) {
         var next;
         do {
+        	// cycle until we find the next prototype level that has
+        	//	the function that we are trying to call.
             next = level && level.prototype.hasOwnProperty( key
                     ) && level.prototype[ key ];
             level = level.superclass;
@@ -76,11 +104,15 @@ Class.create = function( constr ) {
     if( !constr.wrapper ) {
         var overridden = {};
         for( var key in constr.prototype ) {
+        	// we are creating an identical interface of functions that do
+        	// our housekeeping.  We are using Function.prototype.curry, which
+        	// comes from prototypejs[prototypejs.org]
             if( typeof constr.prototype[ key ] === 'function' && key !== 'constructor' ) {
                 overridden[ key ] = _super.curry( key, constr );
             }
         }
 
+        // save off the wrapper for the next creation of this class.
         constr.wrapper = Class( constr, overridden );
 
     }
