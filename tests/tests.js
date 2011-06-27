@@ -117,5 +117,40 @@
         equal( subsubInst.toString(), 'SubSubClass' );
         equal( subInst.toString(), 'SubClass and SuperClass checking in.' );
     } );
+
+    var SuperConstrClass = Class( {
+        constructor: function() {
+            this.field = "awesome!";
+        },
+
+        toString: function() {
+            return this.field;
+        }
+    } );
+
+    var constr = function() {
+        this.someField = "This is";
+    };
+    var ConstrClass = Class( SuperConstrClass, {
+        constructor: constr,
+        toString: function() {
+            return this.someField + ' ' + this.super();
+        }
+    } );
+
+    var constrInst;
+    module( "Specifying a constructor", {
+        setup: function() {
+            constrInst = Class.create( ConstrClass );
+        }
+    } );
+
+    test( 'constructor we specify is used', function() {
+        equal( constrInst.constructor, constr, 'constructors are the same' );
+    } );
+
+    test( 'constructor called', function() {
+        equal( constrInst.toString(), 'This is awesome!', 'correct value gotten' );
+    } );
 }() );
 

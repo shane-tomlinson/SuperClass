@@ -36,8 +36,12 @@ function Class( superclass, subclass ) {
         superclass = null;
     }
 
-    // F is our new class constructor, it does nothing.  Absolutely nothing.
-    var F = function() {};
+    // F is our new class constructor, if specified on the subclass, use it,
+    // otherwise create a new constructor that does nothing.
+    var F = subclass.hasOwnProperty( 'constructor' ) ? 
+        subclass.constructor : 
+        function() {};
+
     if( superclass ) {
         // If there was a superclass, set our new classes prototype to it.
         F.prototype = new superclass();
