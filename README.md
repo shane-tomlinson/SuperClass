@@ -2,7 +2,7 @@
 ##Bastardize the Javascript Inheritance Model even Further.
 
 A proof of concept bastardization of Javascript to create a home grown
-class system that provides a declarative but "classical" model of inheritence in Javascript.  It takes the already proven ways of implementing classical inheritence and then adds some goodness.  This code rolls its own prototype chain traversal and stack frame management.  The purpose of this project is purely experimental, if used it will bloat your apps memory usage, as well as cause all kinds of strange side effects that you might not like.
+class system that provides a declarative but "classical" model of inheritence in Javascript.  It takes the already proven ways of implementing classical inheritence and then adds some goodness.  This code rolls its own prototype chain traversal and stack frame management.  The purpose of this project is purely experimental, if used, it may cause all kinds of strange side effects that you might not like.
 
 ##The Reasons/The Need
 
@@ -29,6 +29,9 @@ So, the code shows the implementation.  Still in development, still being cleane
 I am open to suggestions.
 
 Again, this is a proof of concept.  I am not using it in any production code.  It causes bloat.  It's not very performant.  It's an interesting sugar, perhaps you have some ideas on how to remove these limitations and make it truely uber-cool.
+
+##Acknowledgements
+I'd like to thank Dan Newcome[http://newcome.wordpress.com/] for reading the article[http://www.shanetomlinson.com/2011/javascript-inheritance-super/] and asked me "Why not try something like..." which is what this version is.  His suggestion made things much more memory efficient.
 
 email me at:
 set117 at yahoo.com

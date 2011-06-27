@@ -1,3 +1,13 @@
+if( !Function.prototype.curry ) {
+    Function.prototype.curry = function() {
+            var fn = this, args = Array.prototype.slice.call(arguments);
+            return function() {
+                    return fn.apply(this, args.concat(
+                          Array.prototype.slice.call(arguments)));
+            };
+    };
+}
+
 function Class( superclass, subclass ) {
     if( !subclass ) {
         subclass = superclass;
@@ -32,110 +42,51 @@ function Class( superclass, subclass ) {
 
 // The creation function.  Called like: Class.create( constructor_to_use );
 Class.create = function( constr ) {
-    var obj = new constr();
 
-    // No wrapping on base class instances.
-    if( !obj.constructor.superclass ) {
-        return obj;
+    // This takes care of when the user calls "this.super()"
+    // The initial call to the decorator and each call to this.super
+    // sets up currLevel to point to the function that should
+    // be run next.
+    function _super( key, level ) {
+        var info = findNext( key, level ),
+            retval;
+
+        if( info.next ) {
+            this.super = _super.bind( this, key, info.level );
+            var args = [].slice.call( arguments, 2 );
+            retval = info.next.apply( this, args );
+
+            this.super = null;
+            delete this.super;
+        }
+
+        return retval;
     }
 
-    // There is one set of handlers created for each object.  This allows us to
-    // manage the call stack/prototype chain for every function call in the
-    // chain.  Because these functions are created once for each object, it
-    // is less than optimal when it comes to memory usage.
-    var funcDecorator = ( function( obj ) {
-        var currLevel,
-            currKey,
-            stack = [];
+    function findNext( key, level ) {
+        var next;
+        do {
+            next = level && level.prototype.hasOwnProperty( key
+                    ) && level.prototype[ key ];
+            level = level.superclass;
+        } while( level && !next );
+        return { next: next, level: level };
+    }
 
-        function pushStack() {
-            stack.push( [ currLevel, currKey ] );
-        }
-
-        function popStack() {
-            var level = stack.splice( stack.length - 1, 1 );
-            currLevel = level[ 0 ];
-            currKey = level[ 1 ];
-        }
-
-        // The initial decorator function, this function decorates
-        // every front facing function created whenever the object
-        // is created using Class.create.  When the function is called,
-        // two variables, currLevel and currKey are set up to keep track
-        // of where in the prototype chain we are currently and which
-        // funciton needs called.  When entering the function, push
-        // the current key/level info on the stack so that when we
-        // finish, the state is back to where it originally was.
-        // currLevel, currKey are not unique to each function call,
-        // but are unique to each object.  This means we have to keep
-        // the state appropriately.
-        function decorator( key ) {
-            return function() {
-                pushStack();
-
-                // currKey and currLevel point at our current function
-                // at the constructor.
-                currKey = key;
-                currLevel = obj.constructor;
-
-                obj.super = _super;
-
-                var next = findNext(),
-                    retval = next.apply( obj, arguments );
-
-                obj.super = null;
-                delete obj.super;
-
-                popStack();
-
-                return retval;
-            };
-        }
-
-        // This takes care of when the user calls "this.super()"
-        // The initial call to the decorator and each call to this.super
-        // sets up currLevel to point to the function that should
-        // be run next.
-        function _super() {
-            pushStack();
-
-            var next = findNext(),
-                retval;
-
-            if( next ) {
-                retval = next.apply( obj, arguments );
+    if( !constr.wrapper ) {
+        var overridden = {};
+        for( var key in constr.prototype ) {
+            if( typeof constr.prototype[ key ] === 'function' && key !== 'constructor' ) {
+                overridden[ key ] = _super.curry( key, constr );
             }
-
-            popStack();
-
-            return retval;
-        };
-
-        function findNext() {
-            var next;
-            do {
-                next = currLevel && currLevel.prototype.hasOwnProperty( currKey
-                        ) && currLevel.prototype[ currKey ];
-                currLevel = currLevel.superclass;
-            } while( currLevel && !next );
-            return next;
         }
 
-        return decorator;
-    }( obj ) );
+        constr.wrapper = Class( constr, overridden );
 
-    for( var key in obj.constructor.prototype ) {
-        var item = obj[ key ];
-        // note, there is NO hasOwnProperty.  We want to iterate through
-        // ALL of the Class' top level functions.  We are decorating
-        // each function with out own that sets up the call stack management
-        // routine.  Note, we do not wrap the constructor.  This is so that we
-        // can do instanceof correctly.
-        if( typeof item === 'function' && key !== 'constructor' ) {
-            obj[key] = funcDecorator( key );
-        }
     }
 
+    var obj = new constr.wrapper();
+    obj.constructor = constr;
 
     return obj;
 }
